@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>条码生成器</title>
+    <link rel="stylesheet" href="./index.css">
+	<script  type="text/javascript" charset="utf-8"  src="js/html2canvas.js"></script>
+    <script  type="text/javascript" charset="utf-8" src="js/jsPdf.debug.js"></script>
+    <script  type="text/javascript" charset="utf-8" src="js/canvas2image.js"></script>
+    <script src="./JsBarcode.all.min.js"></script>
+    <script src="./node_modules/qrcode/build/qrcode.min.js"></script>
+    <style>
+    </style>
+  </head>
+  <body>
+  
+    <div class="barcode-box">
+      <div class="form-item">
+        <input type="text" class="barcode-input" placeholder="输入文本">
+        <a class="code-button barcode-button">生成条码</a>
+		 <button id="exportToPdf" class="code-button barcode-button">导出为PDF</button>
+     <!--   <a class="code-button qrcode-button">生成二维码</a>-->
+      </div>
+	  <div id="export_content">
+      <br>
+      <canvas id="barcode" class="barcode"></canvas>
+      <br>
+      <canvas id="qrcode" class="qrcode"></canvas>
+    </div>
+    <!-- All of the Node.js APIs are available in this renderer process. -->
+    <!-- We are using Node.js <script>document.write(process.versions.node)</script>,
+    Chromium <script>document.write(process.versions.chrome)</script>,
+    and Electron <script>document.write(process.versions.electron)</script>. -->
+    <script>
+      let input = document.querySelector('.barcode-input'),
+        qrcodeCanvas = document.getElementById('qrcode')
+        barcodeButton = document.querySelector('.barcode-button'),
+        qrcodeButton = document.querySelector('.qrcode-button')
+
+      barcodeButton.addEventListener('click',function(){
+        let val = input.value.trim()
+        if(!val){
+          input.focus()
+          input.value = ''
+          return
+        }
+        JsBarcode("#barcode", val);
+      },false)
+
+      qrcodeButton.addEventListener('click',function(){
+        let val = input.value.trim()
+        if(!val){
+          input.focus()
+          input.value = ''
+          return
+        }
+        QRCode.toCanvas(qrcodeCanvas, val,{version:5,margin:1,width:200}, function (error) {
+          if (error) console.error(error)
+          console.log('success!');
+        })
+      },false)
+
+
+      // You can also require other files to run in this process
+      require('./renderer.js')
+    </script>
+	<script src="https://cdn.bootcss.com/jspdf/1.5.3/jspdf.debug.js"></script>
+<script src="https://cdn.bootcss.com/html2canvas/0.5.0-beta4/html2canvas.min.js"></script>
+<script type="text/javascript">
+    var downPdf = document.getElementById("exportToPdf");
+    downPdf.onclick = function () {
+        html2canvas(
+                document.getElementById("export_content"),
+                {
+                    dpi: 1080,//导出pdf清晰度
+                    onrendered: function (canvas) {
+                        var contentWidth = canvas.width;
+                        var contentHeight = canvas.height;
+ 
+                        //一页pdf显示html页面生成的canvas高度;
+                        var pageHeight = contentWidth / 592.28 * 841.89;
+                        //未生成pdf的html页面高度
+                        var leftHeight = contentHeight;
+                        //pdf页面偏移
+                        var position = 0;
+                        //html页面生成的canvas在pdf中图片的宽高（a4纸的尺寸[595.28,841.89]）
+                        var imgWidth = 595.28;
+                        var imgHeight = 592.28 / contentWidth * contentHeight;
+ 
+                        var pageData = canvas.toDataURL('image/jpeg', 1.0);
+                        var pdf = new jsPDF('', 'pt', 'a4');
+ 
+                        //有两个高度需要区分，一个是html页面的实际高度，和生成pdf的页面高度(841.89)
+                        //当内容未超过pdf一页显示的范围，无需分页
+                        if (leftHeight < pageHeight) {
+                            pdf.addImage(pageData, 'JPEG', 0, 0, imgWidth, imgHeight);
+                        } else {
+                            while (leftHeight > 0) {
+                                pdf.addImage(pageData, 'JPEG', 0, position, imgWidth, imgHeight)
+                                leftHeight -= pageHeight;
+                                position -= 841.89;
+                                //避免添加空白页
+                                if (leftHeight > 0) {
+                                    pdf.addPage();
+                                }
+                            }
+                        }
+                        pdf.save('content.pdf');
+                    },
+                    //背景设为白色（默认为黑色）
+                    background: "#fff"  
+                })
+    }
+</script>
+</div>
+  </body>
+</html>
